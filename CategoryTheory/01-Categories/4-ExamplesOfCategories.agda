@@ -269,14 +269,9 @@ module Cat where
       rewrite-dom-cod-cong {f} {g} = subst₂-type-and-value _—→D_ _≈ₐD_
         (Fₒ≗Gₒ A) (Fₒ≗Gₒ B) (rewrite-dom-cod-≅ f) (rewrite-dom-cod-≅ g)
 
-  _Cat≈ₐ_ : {C D : CatObj} → Rel.Rel (C Cat—→ D) 0ℓ
-  _Cat≈ₐ_ {ObjC , _—→C_ , _ , _} {_ , _ , _≈ₐD_ , _} F G =
-    Σ[ Fₒ≗Gₒ ∈ F.Fₒ ≗ G.Fₒ ]
-      ({A B : ObjC} → (f : A —→C B) →
-        rewrite-dom-cod F G Fₒ≗Gₒ (F.Fₐ f) ≈ₐD G.Fₐ f)
-    where
-    module F = Functor F
-    module G = Functor G
+    _Cat≈ₐ_ : Set
+    _Cat≈ₐ_ = Σ[ Fₒ≗Gₒ ∈ F.Fₒ ≗ G.Fₒ ]
+      ({A B : ObjC} → (f : A —→C B) → rewrite-dom-cod Fₒ≗Gₒ (F.Fₐ f) ≈ₐD G.Fₐ f)
 
   Cat : Category CatObj _Cat—→_ _Cat≈ₐ_
   Cat ._∘_ {_ , _ , _ , C} {_ , _ , _ , D} {_ , _ , _ , E} G F = record
