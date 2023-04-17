@@ -5,7 +5,7 @@ open import Data.Fin using (Fin)
 open import Data.Product using (Σ-syntax; ∃-syntax; _,_; swap)
 open import Data.Unit using (⊤; tt)
 import Data.Unit.Polymorphic as ⊤ₚ
-open import Function as Fun using (Morphism; flip; _on_; _↔_)
+open import Function as Fun using (Morphism; flip; _on_; _↔_; _↩_; mk↩)
 open import Level using (Level; 0ℓ; _⊔_; suc)
 open import Level.Literals using (#_)
 open import Relation.Binary as Rel
@@ -14,7 +14,7 @@ open import Relation.Binary.Construct.Always as Always using (Always)
 open import Relation.Binary.Construct.Composition using (_;_)
 open import Relation.Binary.HeterogeneousEquality as ≅
   using (_≅_; module ≅-Reasoning)
-open import Relation.Binary.Morphism using (PosetHomomorphism)
+open import Relation.Binary.Morphism using (PosetHomomorphism; mkPosetHomo)
 import Relation.Binary.Morphism.Construct.Composition as RelMorComp
 import Relation.Binary.Morphism.Construct.Identity as RelMorId
 open import Relation.Binary.PropositionalEquality as ≡
@@ -472,3 +472,34 @@ module _ {ℓo ℓa ℓ≈ₐ} (C : Category ℓo ℓa ℓ≈ₐ) where
       { isEquivalence = ≡.isEquivalence
       ; reflexive = λ { ≡.refl → C.id _ }
       ; trans = flip C._∘_ } }
+
+module _ {ℓ₁ ℓ₂ ℓ₃ ℓ₄ ℓ₅ ℓ₆} {P : Poset ℓ₁ ℓ₂ ℓ₃} {Q : Poset ℓ₄ ℓ₅ ℓ₆} where
+
+  private
+    module P = Poset P
+    module Q = Poset Q
+
+  PosetHomomorphism→Functor : PosetHomomorphism P Q →
+    Functor (Preorder→Category P.preorder) (Preorder→Category Q.preorder)
+  PosetHomomorphism→Functor F = record
+    { Fₒ = F.⟦_⟧
+    ; Fₐ = F.mono
+    ; isFunctor = record
+      { Fₐ-cong = Fun.id
+      ; F₁ = ⊤ₚ.tt
+      ; F∘ = λ _ _ → ⊤ₚ.tt } }
+    where
+    module F = PosetHomomorphism F
+
+  Functor→PosetHomomorphism :
+    Functor (Preorder→Category P.preorder) (Preorder→Category Q.preorder) →
+    PosetHomomorphism P Q
+  Functor→PosetHomomorphism F = mkPosetHomo P Q F.Fₒ F.Fₐ
+    where
+    module F = Functor F
+
+  PosetHomomorphism↩Functor : PosetHomomorphism P Q ↩
+    Functor (Preorder→Category P.preorder) (Preorder→Category Q.preorder)
+  PosetHomomorphism↩Functor = mk↩
+    {to = PosetHomomorphism→Functor} {from = Functor→PosetHomomorphism}
+    λ F → ≡.refl
