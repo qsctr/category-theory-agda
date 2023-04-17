@@ -9,7 +9,8 @@ open import Function as Fun using (Morphism; flip; _on_; _↔_)
 open import Level using (Level; 0ℓ; _⊔_; suc)
 open import Level.Literals using (#_)
 open import Relation.Binary as Rel
-  using (REL; _⇔_; _=[_]⇒_; IsEquivalence; Setoid; Poset)
+  using (REL; _⇔_; _=[_]⇒_; IsEquivalence; Setoid; Preorder; Poset)
+open import Relation.Binary.Construct.Always as Always using (Always)
 open import Relation.Binary.Construct.Composition using (_;_)
 open import Relation.Binary.HeterogeneousEquality as ≅
   using (_≅_; module ≅-Reasoning)
@@ -439,3 +440,35 @@ module Cat where
   open Category Cat public
 
 open Cat public using (Cat)
+
+module _ {c ℓ₁ ℓ₂} (P : Preorder c ℓ₁ ℓ₂) where
+
+  private
+    module P = Preorder P
+
+  Preorder→Category : Category c ℓ₂ 0ℓ
+  Preorder→Category .Obj = P.Carrier
+  Preorder→Category ._—→_ = P._∼_
+  Preorder→Category ._≈ₐ_ = Always
+  Preorder→Category .isCategory ._∘_ g f = P.trans f g
+  Preorder→Category .isCategory .id a = P.refl
+  Preorder→Category .isCategory ._—→-equiv_ _ _ = Always.isEquivalence _ _
+  Preorder→Category .isCategory .∘-cong _ _ = ⊤ₚ.tt
+  Preorder→Category .isCategory .assoc _ _ _ = ⊤ₚ.tt
+  Preorder→Category .isCategory .unitˡ _ = ⊤ₚ.tt
+  Preorder→Category .isCategory .unitʳ _ = ⊤ₚ.tt
+
+module _ {ℓo ℓa ℓ≈ₐ} (C : Category ℓo ℓa ℓ≈ₐ) where
+
+  private
+    module C = Category C
+
+  Category→Preorder : Preorder ℓo ℓo ℓa
+  Category→Preorder = record
+    { Carrier = C.Obj
+    ; _≈_ = _≡_
+    ; _∼_ = C._—→_
+    ; isPreorder = record
+      { isEquivalence = ≡.isEquivalence
+      ; reflexive = λ { ≡.refl → C.id _ }
+      ; trans = flip C._∘_ } }
