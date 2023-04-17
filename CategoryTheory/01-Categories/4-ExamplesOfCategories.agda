@@ -503,3 +503,15 @@ module _ {ℓ₁ ℓ₂ ℓ₃ ℓ₄ ℓ₅ ℓ₆} {P : Poset ℓ₁ ℓ₂ �
   PosetHomomorphism↩Functor = mk↩
     {to = PosetHomomorphism→Functor} {from = Functor→PosetHomomorphism}
     λ F → ≡.refl
+
+Dis : ∀ {ℓ} → (X : Set ℓ) → Category ℓ ℓ ℓ
+Dis X .Obj = X
+Dis X ._—→_ = _≡_
+Dis X ._≈ₐ_ = _≡_
+Dis X .isCategory ._∘_ ≡.refl ≡.refl = ≡.refl
+Dis X .isCategory .id _ = ≡.refl
+Dis X .isCategory ._—→-equiv_ _ _ = ≡.isEquivalence
+Dis X .isCategory .∘-cong ≡.refl ≡.refl = ≡.refl
+Dis X .isCategory .assoc ≡.refl ≡.refl ≡.refl = ≡.refl
+Dis X .isCategory .unitˡ ≡.refl = ≡.refl
+Dis X .isCategory .unitʳ ≡.refl = ≡.refl
