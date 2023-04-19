@@ -9,7 +9,7 @@ open import Data.Fin using (Fin)
 open import Data.Product using (Σ-syntax; ∃-syntax; _,_; proj₁; swap)
 open import Data.Unit using (⊤; tt)
 import Data.Unit.Polymorphic as ⊤ₚ
-open import Function as Fun using (Morphism; flip; _on_; _↔_; _↩_; mk↩)
+open import Function as Fun using (Morphism; flip; _on_; _↔_; mk↔′; _↩_; mk↩)
 import Function.Equality as FunEq
 open import Level using (0ℓ; _⊔_; suc)
 open import Level.Literals using (#_)
@@ -606,3 +606,42 @@ Mon {c} {ℓ} = structuredSetCategory
       let module M = Monoid M
       in  Fun.id , AlgMorId.isMonoidHomomorphism M.rawMonoid M.refl) ,
     ≡.refl )
+
+module _ {a b ℓ₁ ℓ₂} {M : Monoid a ℓ₁} {N : Monoid b ℓ₂} where
+
+  private
+    module M = Monoid M
+    module N = Monoid N
+    open MonoidMorphisms M.rawMonoid N.rawMonoid
+
+  IsMonoidHomomorphism→IsFunctor : (f : M.Carrier → N.Carrier) →
+    IsMonoidHomomorphism f →
+    IsFunctor (Monoid→Category M .isCategory) (Monoid→Category N .isCategory)
+      Fun.id f
+  IsMonoidHomomorphism→IsFunctor f f-homo = record
+    { Fₐ-cong = f-homo.⟦⟧-cong
+    ; F₁ = f-homo.ε-homo
+    ; F∘ = flip f-homo.homo }
+    where
+    module f-homo = IsMonoidHomomorphism f-homo
+
+  IsFunctor→IsMonoidHomomorphism : {Fₒ : ⊤ → ⊤} → (Fₐ : M.Carrier → N.Carrier) →
+    IsFunctor (Monoid→Category M .isCategory) (Monoid→Category N .isCategory)
+      Fₒ Fₐ →
+    IsMonoidHomomorphism Fₐ
+  IsFunctor→IsMonoidHomomorphism Fₐ isFunctor = record
+    { isMagmaHomomorphism = record
+      { isRelHomomorphism = record
+        { cong = isFunctor.Fₐ-cong }
+        ; homo = flip isFunctor.F∘ }
+    ; ε-homo = isFunctor.F₁ }
+    where
+    module isFunctor = IsFunctor isFunctor
+
+  IsMonoidHomomorphism↔IsFunctor : (f : M.Carrier → N.Carrier) →
+    IsMonoidHomomorphism f ↔
+      IsFunctor (Monoid→Category M .isCategory) (Monoid→Category N .isCategory)
+        Fun.id f
+  IsMonoidHomomorphism↔IsFunctor f = mk↔′
+    (IsMonoidHomomorphism→IsFunctor f) (IsFunctor→IsMonoidHomomorphism f)
+    (λ x → ≡.refl) (λ x → ≡.refl)
