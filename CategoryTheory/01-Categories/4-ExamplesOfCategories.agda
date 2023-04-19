@@ -1,12 +1,17 @@
 module CategoryTheory.01-Categories.4-ExamplesOfCategories where
 
+open import Algebra using (IsMonoid; Monoid)
+open import Algebra.Morphism using (module MonoidMorphisms)
+import Algebra.Morphism.Construct.Composition as AlgMorComp
+import Algebra.Morphism.Construct.Identity as AlgMorId
 open import Data.Empty using (⊥)
 open import Data.Fin using (Fin)
-open import Data.Product using (Σ-syntax; ∃-syntax; _,_; swap)
+open import Data.Product using (Σ-syntax; ∃-syntax; _,_; proj₁; swap)
 open import Data.Unit using (⊤; tt)
 import Data.Unit.Polymorphic as ⊤ₚ
 open import Function as Fun using (Morphism; flip; _on_; _↔_; _↩_; mk↩)
-open import Level using (Level; 0ℓ; _⊔_; suc)
+import Function.Equality as FunEq
+open import Level using (0ℓ; _⊔_; suc)
 open import Level.Literals using (#_)
 open import Relation.Binary as Rel
   using (REL; _⇔_; _=[_]⇒_; IsEquivalence; Setoid; Preorder; Poset)
@@ -14,7 +19,9 @@ open import Relation.Binary.Construct.Always as Always using (Always)
 open import Relation.Binary.Construct.Composition using (_;_)
 open import Relation.Binary.HeterogeneousEquality as ≅
   using (_≅_; module ≅-Reasoning)
-open import Relation.Binary.Morphism using (PosetHomomorphism; mkPosetHomo)
+import Relation.Binary.Indexed.Heterogeneous.Construct.Trivial as RelIndTriv
+open import Relation.Binary.Morphism
+  using (IsRelHomomorphism; PosetHomomorphism; mkPosetHomo)
 import Relation.Binary.Morphism.Construct.Composition as RelMorComp
 import Relation.Binary.Morphism.Construct.Identity as RelMorId
 open import Relation.Binary.PropositionalEquality as ≡
@@ -28,8 +35,8 @@ open import CategoryTheory.Util
 open IsCategory
 open Category
 
-Sets : Category (# 1) 0ℓ 0ℓ
-Sets .Obj = Set
+Sets : ∀ {ℓ} → Category (suc ℓ) ℓ ℓ
+Sets {ℓ} .Obj = Set ℓ
 Sets ._—→_ = Morphism
 Sets ._≈ₐ_ = _≗_
 Sets .isCategory ._∘_ = Fun._∘′_
@@ -47,54 +54,82 @@ Sets .isCategory .assoc f g h x = ≡.refl
 Sets .isCategory .unitˡ f x = ≡.refl
 Sets .isCategory .unitʳ f x = ≡.refl
 
-module Sets = Category Sets
-
 Sets-fin : Category (# 1) 0ℓ 0ℓ
 Sets-fin .Obj = Σ[ A ∈ Set ] ∃[ n ] A ↔ Fin n
 Sets-fin ._—→_ (A , _) (B , _) = A → B
 Sets-fin ._≈ₐ_ = _≗_
-Sets-fin .isCategory ._∘_ = Sets._∘_
-Sets-fin .isCategory .id (A , _) = Sets.id A
-Sets-fin .isCategory ._—→-equiv_ (A , _) (B , _) = A Sets.—→-equiv B
-Sets-fin .isCategory .∘-cong = Sets.∘-cong
-Sets-fin .isCategory .assoc = Sets.assoc
-Sets-fin .isCategory .unitˡ = Sets.unitˡ
-Sets-fin .isCategory .unitʳ = Sets.unitʳ
+Sets-fin .isCategory ._∘_ = Sets ._∘_
+Sets-fin .isCategory .id (A , _) = Sets .id A
+Sets-fin .isCategory ._—→-equiv_ (A , _) (B , _) = Sets ._—→-equiv_ A B
+Sets-fin .isCategory .∘-cong = Sets .∘-cong
+Sets-fin .isCategory .assoc = Sets .assoc
+Sets-fin .isCategory .unitˡ = Sets .unitˡ
+Sets-fin .isCategory .unitʳ = Sets .unitʳ
+
+structuredSetCategory : ∀ {ℓo ℓa ℓs ℓ≈ₛ} →
+  (Obj : Set ℓo) →
+  (_—→_ : Obj → Obj → Set ℓa) →
+  (obj-setoid : Obj → Setoid ℓs ℓ≈ₛ) →
+  (fun : {A B : Obj} → (A —→ B) →
+    Setoid.Carrier (obj-setoid A) → Setoid.Carrier (obj-setoid B)) →
+  ({A B : Obj} → (F : A —→ B) →
+    IsRelHomomorphism
+      (Setoid._≈_ (obj-setoid A)) (Setoid._≈_ (obj-setoid B)) (fun F)) →
+  (Σ[ _∘_ ∈ ({A B C : Obj} → (B —→ C) → (A —→ B) → (A —→ C)) ]
+    ({A B C : Obj} → (G : B —→ C) → (F : A —→ B) →
+      fun (G ∘ F) ≡ fun G Fun.∘ fun F)) →
+  (Σ[ id ∈ ((A : Obj) → (A —→ A)) ] ({A : Obj} → fun (id A) ≡ Fun.id)) →
+  Category ℓo ℓa (ℓs ⊔ ℓ≈ₛ)
+structuredSetCategory Obj _—→_ obj-setoid fun ≈-homo
+  (_∘_ , _∘-fun_) (id , id-fun) = record
+    { Obj = Obj
+    ; _—→_ = _—→_
+    ; _≈ₐ_ = λ {A} {B} → Setoid._≈_ (A fun-setoid B) on fun
+    ; isCategory = record
+      { _∘_ = _∘_
+      ; id = id
+      ; _—→-equiv_ = λ A B → record
+        { refl = Setoid.refl (A fun-setoid B)
+        ; sym = Setoid.sym (A fun-setoid B)
+        ; trans = Setoid.trans (A fun-setoid B) }
+      ; ∘-cong = λ {A} {B} {C} {G₁} {G₂} {F₁} {F₂} G₁≈ₐG₂ F₁≈ₐF₂ x →
+        let open ≈-Reasoning (obj-setoid C)
+        in  begin
+          fun (G₁ ∘ F₁) x   ≡⟨ ≡.cong-app (G₁ ∘-fun F₁) x ⟩
+          fun G₁ (fun F₁ x) ≈⟨ IsRelHomomorphism.cong (≈-homo G₁) (F₁≈ₐF₂ x) ⟩
+          fun G₁ (fun F₂ x) ≈⟨ G₁≈ₐG₂ (fun F₂ x) ⟩
+          fun G₂ (fun F₂ x) ≡˘⟨ ≡.cong-app (G₂ ∘-fun F₂) x ⟩
+          fun (G₂ ∘ F₂) x   ∎
+      ; assoc = λ {A} {B} {C} {D} F G H x → Setoid.reflexive (obj-setoid D)
+        let open ≡-Reasoning
+        in  begin
+          fun (H ∘ (G ∘ F)) x     ≡⟨ ≡.cong-app (H ∘-fun (G ∘ F)) x ⟩
+          fun H (fun (G ∘ F) x)   ≡⟨ ≡.cong (fun H) (≡.cong-app (G ∘-fun F) x) ⟩
+          fun H (fun G (fun F x)) ≡˘⟨ ≡.cong-app (H ∘-fun G) (fun F x) ⟩
+          fun (H ∘ G) (fun F x)   ≡˘⟨ ≡.cong-app ((H ∘ G) ∘-fun F) x ⟩
+          fun ((H ∘ G) ∘ F) x     ∎
+      ; unitˡ = λ {A} {B} F x → Setoid.reflexive (obj-setoid B)
+        let open ≡-Reasoning
+        in  begin
+          fun (id B ∘ F) x     ≡⟨ ≡.cong-app (id B ∘-fun F) x ⟩
+          fun (id B) (fun F x) ≡⟨ ≡.cong-app id-fun (fun F x) ⟩
+          fun F x              ∎
+      ; unitʳ = λ {A} {B} F x → Setoid.reflexive (obj-setoid B)
+        let open ≡-Reasoning
+        in begin
+          fun (F ∘ id A) x     ≡⟨ ≡.cong-app (F ∘-fun id A) x ⟩
+          fun F (fun (id A) x) ≡⟨ ≡.cong (fun F) (≡.cong-app id-fun x) ⟩
+          fun F x              ∎ } }
+  where
+  _fun-setoid_ : Obj → Obj → Setoid _ _
+  A fun-setoid B = FunEq.≡-setoid
+    (Setoid.Carrier (obj-setoid A)) (RelIndTriv.indexedSetoid (obj-setoid B))
 
 Pos : ∀ {c ℓ₁ ℓ₂} → Category (suc (c ⊔ ℓ₁ ⊔ ℓ₂)) (c ⊔ ℓ₁ ⊔ ℓ₂) (c ⊔ ℓ₁)
-Pos {c} {ℓ₁} {ℓ₂} .Obj = Poset c ℓ₁ ℓ₂
-Pos ._—→_ = PosetHomomorphism
-Pos ._≈ₐ_ {P} {Q} F G = ∀ x → F.⟦ x ⟧ Q.≈ G.⟦ x ⟧
-  where
-  module Q = Poset Q
-  module F = PosetHomomorphism F
-  module G = PosetHomomorphism G
-Pos .isCategory ._∘_ g f = RelMorComp.posetHomomorphism f g
-Pos .isCategory .id = RelMorId.posetHomomorphism
-Pos .isCategory ._—→-equiv_ P Q = record
-  { refl = λ {F} x → Q.refl
-  ; sym = λ F≈ₐG x → Q.sym (F≈ₐG x)
-  ; trans = λ F≈ₐG G≈ₐH x → Q.trans (F≈ₐG x) (G≈ₐH x) }
-  where
-  module Q = Poset.Eq Q
-Pos .isCategory .∘-cong {A} {B} {C} {G₁} {G₂} {F₁} {F₂} G₁≈ₐG₂ F₁≈ₐF₂ x = begin
-  G₁.⟦ F₁.⟦ x ⟧ ⟧ ≈⟨ G₁.cong (F₁≈ₐF₂ x) ⟩
-  G₁.⟦ F₂.⟦ x ⟧ ⟧ ≈⟨ G₁≈ₐG₂ F₂.⟦ x ⟧ ⟩
-  G₂.⟦ F₂.⟦ x ⟧ ⟧ ∎
-  where
-  open ≈-Reasoning (Poset.Eq.setoid C)
-  module G₁ = PosetHomomorphism G₁
-  module G₂ = PosetHomomorphism G₂
-  module F₁ = PosetHomomorphism F₁
-  module F₂ = PosetHomomorphism F₂
-Pos .isCategory .assoc {A} F G H x = H.cong (G.cong (F.cong A.Eq.refl))
-  where
-  module A = Poset A
-  module F = PosetHomomorphism F
-  module G = PosetHomomorphism G
-  module H = PosetHomomorphism H
-Pos .isCategory .unitˡ {A} F x = PosetHomomorphism.cong F (Poset.Eq.refl A)
-Pos .isCategory .unitʳ {A} F x = PosetHomomorphism.cong F (Poset.Eq.refl A)
+Pos {c} {ℓ₁} {ℓ₂} = structuredSetCategory (Poset c ℓ₁ ℓ₂) PosetHomomorphism
+  Poset.Eq.setoid PosetHomomorphism.⟦_⟧ PosetHomomorphism.Eq.isRelHomomorphism
+  (flip RelMorComp.posetHomomorphism , λ G F → ≡.refl)
+  (RelMorId.posetHomomorphism , ≡.refl)
 
 Rel : Category (# 1) (# 1) 0ℓ
 Rel .Obj = Set
@@ -515,3 +550,59 @@ Dis X .isCategory .∘-cong ≡.refl ≡.refl = ≡.refl
 Dis X .isCategory .assoc ≡.refl ≡.refl ≡.refl = ≡.refl
 Dis X .isCategory .unitˡ ≡.refl = ≡.refl
 Dis X .isCategory .unitʳ ≡.refl = ≡.refl
+
+module _ {c ℓ} (M : Monoid c ℓ) where
+
+  private
+    module M = Monoid M
+
+  Monoid→Category : Category 0ℓ c ℓ
+  Monoid→Category .Obj = ⊤
+  Monoid→Category ._—→_ tt tt = M.Carrier
+  Monoid→Category ._≈ₐ_ = M._≈_
+  Monoid→Category .isCategory ._∘_ = M._∙_
+  Monoid→Category .isCategory .id _ = M.ε
+  Monoid→Category .isCategory ._—→-equiv_ _ _ = M.isEquivalence
+  Monoid→Category .isCategory .∘-cong = M.∙-cong
+  Monoid→Category .isCategory .assoc x y z = M.sym (M.assoc z y x)
+  Monoid→Category .isCategory .unitˡ = M.identityˡ
+  Monoid→Category .isCategory .unitʳ = M.identityʳ
+
+module _ {ℓo ℓa ℓ≈ₐ} (ℂ : Category ℓo ℓa ℓ≈ₐ) where
+
+  private
+    module ℂ = Category ℂ
+
+  Hom : ℂ.Obj → ℂ.Obj → Set ℓa
+  Hom = ℂ._—→_
+
+  Hom-Monoid : (C : ℂ.Obj) → IsMonoid {A = Hom C C} ℂ._≈ₐ_ ℂ._∘_ (ℂ.id C)
+  Hom-Monoid C = record
+    { isSemigroup = record
+      { isMagma = record
+        { isEquivalence = C ℂ.—→-equiv C
+        ; ∙-cong = ℂ.∘-cong }
+      ; assoc = λ f g h → IsEquivalence.sym (C ℂ.—→-equiv C) (ℂ.assoc h g f) }
+    ; identity = ℂ.unitˡ , ℂ.unitʳ }
+
+Mon : ∀ {c ℓ} → Category (suc (c ⊔ ℓ)) (c ⊔ ℓ) (c ⊔ ℓ)
+Mon {c} {ℓ} = structuredSetCategory
+  (Monoid c ℓ)
+  (λ M N →
+    let module M = Monoid M
+        module N = Monoid N
+        open MonoidMorphisms M.rawMonoid N.rawMonoid
+    in  Σ[ h ∈ (M.Carrier → N.Carrier) ] IsMonoidHomomorphism h)
+  Monoid.setoid
+  proj₁
+  (λ {M} {N} (_ , homo) →
+    let open MonoidMorphisms (Monoid.rawMonoid M) (Monoid.rawMonoid N)
+    in  IsMonoidHomomorphism.isRelHomomorphism homo)
+  ( (λ {M} {N} {O} (g , g-homo) (f , f-homo) →
+      g Fun.∘ f ,
+      AlgMorComp.isMonoidHomomorphism (Monoid.trans O) f-homo g-homo) ,
+    λ G F → ≡.refl )
+  ( (λ M →
+      let module M = Monoid M
+      in  Fun.id , AlgMorId.isMonoidHomomorphism M.rawMonoid M.refl) ,
+    ≡.refl )

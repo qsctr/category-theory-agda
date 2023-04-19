@@ -3,7 +3,7 @@ module CategoryTheory.01-Categories.3-DefinitionOfACategory where
 open import Level using (_⊔_; suc)
 open import Relation.Binary using (Rel; _Preserves₂_⟶_⟶_; IsEquivalence; Setoid)
 
-record IsCategory {ℓo ℓa ℓ≈ₐ} (Obj : Set ℓo) (_—→_ : Rel Obj ℓa)
+record IsCategory {ℓo ℓa ℓ≈ₐ} (Obj : Set ℓo) (_—→_ : Obj → Obj → Set ℓa)
   (_≈ₐ_ : {A B : Obj} → Rel (A —→ B) ℓ≈ₐ)
   : Set (ℓo ⊔ ℓa ⊔ ℓ≈ₐ) where
   field
@@ -29,7 +29,7 @@ record IsCategory {ℓo ℓa ℓ≈ₐ} (Obj : Set ℓo) (_—→_ : Rel Obj ℓ
 record Category ℓo ℓa ℓ≈ₐ : Set (suc (ℓo ⊔ ℓa ⊔ ℓ≈ₐ)) where
   field
     Obj : Set ℓo
-    _—→_ : Rel Obj ℓa
+    _—→_ : Obj → Obj → Set ℓa
     _≈ₐ_ : {A B : Obj} → Rel (A —→ B) ℓ≈ₐ
     isCategory : IsCategory Obj _—→_ _≈ₐ_
 
