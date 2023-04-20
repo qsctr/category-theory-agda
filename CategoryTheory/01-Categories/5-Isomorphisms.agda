@@ -133,26 +133,26 @@ module Subgroup {c ℓ} (G : Group c ℓ) where
     open ClosedSubset closedSubset
 
 Groups : ∀ {c ℓ} → Category (suc (c ⊔ ℓ)) (c ⊔ ℓ) (c ⊔ ℓ)
-Groups {c} {ℓ} = structuredSetCategory
-  (Group c ℓ)
-  (λ G H →
+Groups {c} {ℓ} = structuredSetCategory record
+  { Obj = Group c ℓ
+  ; _—→_ = λ G H →
     let module G = Group G
         module H = Group H
         open GroupMorphisms G.rawGroup H.rawGroup
-    in  Σ[ f ∈ (G.Carrier → H.Carrier) ] IsGroupHomomorphism f)
-  Group.setoid
-  proj₁
-  (λ {G} {H} (_ , homo) →
+    in  Σ[ f ∈ (G.Carrier → H.Carrier) ] IsGroupHomomorphism f
+  ; obj-setoid = Group.setoid
+  ; fun = proj₁
+  ; ≈-homo = λ {G} {H} (_ , homo) →
     let open GroupMorphisms (Group.rawGroup G) (Group.rawGroup H)
-    in  IsGroupHomomorphism.isRelHomomorphism homo)
-  ( (λ {G} {H} {I} (g , g-homo) (f , f-homo) →
-      g Fun.∘ f ,
-      AlgMorComp.isGroupHomomorphism (Group.trans I) f-homo g-homo) ,
-    λ g f → ≡.refl )
-  ( (λ G →
-      let module G = Group G
-      in  Fun.id , AlgMorId.isGroupHomomorphism G.rawGroup G.refl) ,
-    ≡.refl )
+    in  IsGroupHomomorphism.isRelHomomorphism homo
+  ; _∘_ = λ {G} {H} {I} (g , g-homo) (f , f-homo) →
+    g Fun.∘ f ,
+    AlgMorComp.isGroupHomomorphism (Group.trans I) f-homo g-homo
+  ; _∘-fun_ = λ g f → ≡.refl
+  ; id = λ G →
+    let module G = Group G
+    in  Fun.id , AlgMorId.isGroupHomomorphism G.rawGroup G.refl
+  ; id-fun = ≡.refl }
 
 module _ {c} (G : Group c c) where
 
