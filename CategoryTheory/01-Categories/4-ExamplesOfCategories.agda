@@ -100,7 +100,7 @@ structuredSetCategory Obj _—→_ obj-setoid fun ≈-homo
           fun G₁ (fun F₂ x) ≈⟨ G₁≈ₐG₂ (fun F₂ x) ⟩
           fun G₂ (fun F₂ x) ≡˘⟨ ≡.cong-app (G₂ ∘-fun F₂) x ⟩
           fun (G₂ ∘ F₂) x   ∎
-      ; assoc = λ {A} {B} {C} {D} F G H x → Setoid.reflexive (obj-setoid D)
+      ; assoc = λ {A} {B} {C} {D} H G F x → Setoid.reflexive (obj-setoid D)
         let open ≡-Reasoning
         in  begin
           fun (H ∘ (G ∘ F)) x     ≡⟨ ≡.cong-app (H ∘-fun (G ∘ F)) x ⟩
@@ -453,7 +453,7 @@ module Cat where
       G₂.Fₒ (F₂.Fₒ A) ∎
       where
       open ≡-Reasoning
-  Cat .isCategory .assoc {_} {_} {_} {C₄} F G H = (λ A → ≡.refl) ,
+  Cat .isCategory .assoc {_} {_} {_} {C₄} H G F = (λ A → ≡.refl) ,
     λ {A} {B} f →
       IsEquivalence.refl (H.Fₒ (G.Fₒ (F.Fₒ A)) C₄.—→-equiv H.Fₒ (G.Fₒ (F.Fₒ B)))
     where
@@ -564,7 +564,7 @@ module _ {c ℓ} (M : Monoid c ℓ) where
   Monoid→Category .isCategory .id _ = M.ε
   Monoid→Category .isCategory ._—→-equiv_ _ _ = M.isEquivalence
   Monoid→Category .isCategory .∘-cong = M.∙-cong
-  Monoid→Category .isCategory .assoc x y z = M.sym (M.assoc z y x)
+  Monoid→Category .isCategory .assoc x y z = M.sym (M.assoc x y z)
   Monoid→Category .isCategory .unitˡ = M.identityˡ
   Monoid→Category .isCategory .unitʳ = M.identityʳ
 
@@ -582,7 +582,7 @@ module _ {ℓo ℓa ℓ≈ₐ} (ℂ : Category ℓo ℓa ℓ≈ₐ) where
       { isMagma = record
         { isEquivalence = C ℂ.—→-equiv C
         ; ∙-cong = ℂ.∘-cong }
-      ; assoc = λ f g h → IsEquivalence.sym (C ℂ.—→-equiv C) (ℂ.assoc h g f) }
+      ; assoc = λ h g f → IsEquivalence.sym (C ℂ.—→-equiv C) (ℂ.assoc h g f) }
     ; identity = ℂ.unitˡ , ℂ.unitʳ }
 
 Mon : ∀ {c ℓ} → Category (suc (c ⊔ ℓ)) (c ⊔ ℓ) (c ⊔ ℓ)
@@ -592,7 +592,7 @@ Mon {c} {ℓ} = structuredSetCategory
     let module M = Monoid M
         module N = Monoid N
         open MonoidMorphisms M.rawMonoid N.rawMonoid
-    in  Σ[ h ∈ (M.Carrier → N.Carrier) ] IsMonoidHomomorphism h)
+    in  Σ[ f ∈ (M.Carrier → N.Carrier) ] IsMonoidHomomorphism f)
   Monoid.setoid
   proj₁
   (λ {M} {N} (_ , homo) →
