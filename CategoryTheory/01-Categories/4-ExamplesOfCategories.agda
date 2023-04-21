@@ -332,9 +332,9 @@ module _ where
   open IsCategory
   open Category
 
-  module Cat where
+  module Cat {ℓo ℓa ℓ≈ₐ} where
 
-    module _ {C D : Category 0ℓ 0ℓ 0ℓ} (F G : Functor C D) where
+    module _ {C D : Category ℓo ℓa ℓ≈ₐ} (F G : Functor C D) where
 
       private
         module C = Category C
@@ -355,8 +355,8 @@ module _ where
         rewrite-dom-cod-cong {f} {g} = subst₂-type-and-value D._—→_ D._≈ₐ_
           (Fₒ≗Gₒ A) (Fₒ≗Gₒ B) (rewrite-dom-cod-≅ f) (rewrite-dom-cod-≅ g)
 
-    Cat : Category (# 1) (# 1) 0ℓ
-    Cat .Obj = Category 0ℓ 0ℓ 0ℓ
+    Cat : Category (suc (ℓo ⊔ ℓa ⊔ ℓ≈ₐ)) (suc (ℓo ⊔ ℓa ⊔ ℓ≈ₐ)) (ℓo ⊔ ℓa ⊔ ℓ≈ₐ)
+    Cat .Obj = Category ℓo ℓa ℓ≈ₐ
     Cat ._—→_ = Functor
     Cat ._≈ₐ_ {C} {D} F G = Σ[ Fₒ≗Gₒ ∈ F.Fₒ ≗ G.Fₒ ]
       ({A B : C.Obj} → (f : A C.—→ B) →
